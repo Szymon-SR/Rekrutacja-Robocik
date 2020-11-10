@@ -1,10 +1,5 @@
 from board import input_board
-
-
-# pos = 14
-# tile = 'wW'
-# white_turn = True     white_turn = False
-# position dict:    12: 'wr'
+from move_translator import finishing_move
 
 
 def get_all_tiles() -> list:
@@ -15,7 +10,7 @@ def get_all_tiles() -> list:
     all_tiles = []
     for i in range(8):
         for j in range(8):
-            all_tiles.append(i * 10 + j)
+            all_tiles.append(i*10 + j)
 
     return all_tiles
 
@@ -26,7 +21,7 @@ def get_empty_tiles(board: list) -> list:
     for r, row in enumerate(board):
         for t, tile in enumerate(row):
             if tile == '--':
-                tile_number: int = r * 10 + t
+                tile_number: int = r*10 + t
                 empty_tiles.append(tile_number)
 
     return empty_tiles
@@ -45,14 +40,15 @@ def get_not_own_tiles(board: list, is_white: bool) -> list:
     for i, row in enumerate(board):
         for j, tile in enumerate(row):
             if tile == '--' or tile[0] == opponent_color:
-                s: int = i * 10 + j
+                s: int = i*10 + j
                 not_own_tiles.append(s)
 
     return not_own_tiles
 
 
 def rook_moves(board: list, rook_pos: int, white_turn: bool) -> list:
-    """Zwraca możliwe ruchy na wolne pola wieży o określonej pozycji"""
+    """Zwraca listę możliwych ruchów wieży (o określonej pozycji)
+    na wolne pola, lub pola gdzie może zbić"""
     moves = []
     position_changes = [-10, -1, 1, 10]
 
@@ -76,12 +72,12 @@ def rook_moves(board: list, rook_pos: int, white_turn: bool) -> list:
             else:
                 break
 
-
     return moves
 
 
 def knight_moves(board: list, knight_pos: int, white_turn: bool) -> list:
-    """Zwraca listę możliwych ruchów skoczka na wolne pola, lub pola gdzie może zbić"""
+    """Zwraca listę możliwych ruchów skoczka (o określonej pozycji)
+    na wolne pola, lub pola gdzie może zbić"""
 
     k = knight_pos
     moves = []
@@ -95,7 +91,8 @@ def knight_moves(board: list, knight_pos: int, white_turn: bool) -> list:
 
 
 def bishop_moves(board: list, bishop_pos: int, white_turn: bool) -> list:
-    """Zwraca listę możliwych ruchów gońca"""
+    """Zwraca listę możliwych ruchów gońca (o określonej pozycji)
+    na wolne pola, lub pola gdzie może zbić"""
     moves = []
     position_changes = [-11, -9, 9, 11]
 
@@ -122,8 +119,8 @@ def bishop_moves(board: list, bishop_pos: int, white_turn: bool) -> list:
 
 
 def queen_moves(board: list, queen_pos: int, white_turn: bool) -> list:
-    """Zwraca listę możliwych ruchów hetmana, czyli ruchy które mógłby wykonać
-    goniec i ruchy które mogłaby wykonać wieża """
+    """Zwraca listę możliwych ruchów hetmana o określonej pozycji, czyli ruchy
+    które mógłby wykonać goniec i ruchy które mogłaby wykonać wieża """
     moves = []
     rook = rook_moves(board, queen_pos, white_turn)
     bishop = bishop_moves(board, queen_pos, white_turn)
@@ -168,7 +165,7 @@ def pawn_moves(board: list, pawn_pos: int, white_turn: bool) -> list:
     return moves
 
 
-def pawn_attacks(board: list, pawn_pos: int, white_turn: bool) -> list:
+def pawn_attacks(pawn_pos: int, white_turn: bool) -> list:
     """Zwraca listę pól atakowanych przez piona"""
     attacks = []
 
@@ -191,7 +188,8 @@ def pawn_attacks(board: list, pawn_pos: int, white_turn: bool) -> list:
 
 
 def king_moves(board: list, king_pos: int, white_turn: bool) -> list:
-    """Zwraca listę możliwych ruchów króla na wolne pola, lub pola gdzie może zbić"""
+    """Zwraca listę możliwych ruchów króla (o określonej pozycji)
+    na wolne pola, lub pola gdzie może zbić"""
 
     k = king_pos
     moves = []
@@ -215,7 +213,7 @@ def find_king(board: list, white_turn: bool) -> int:
     for i, row in enumerate(board):
         for j, tile in enumerate(row):
             if tile == opponents_king:
-                king_pos: int = i * 10 + j
+                king_pos: int = i*10 + j
 
                 return king_pos
 
@@ -253,7 +251,7 @@ def is_check(board: list, positions: dict, white_turn: bool) -> bool:
 
     for position, figure in positions.items():
         if figure == f'{color_letter}p':
-            attacked_tiles += pawn_attacks(board, position, white_turn)
+            attacked_tiles += pawn_attacks(position, white_turn)
         if figure == f'{color_letter}r':
             attacked_tiles += rook_moves(board, position, white_turn)
         if figure == f'{color_letter}k':
@@ -273,11 +271,9 @@ def is_check(board: list, positions: dict, white_turn: bool) -> bool:
         return False
 
 
-def check_all_moves(board: list):
+def check_all_moves(board: list, white_turn: bool):
     """Sprawdzamy czy występuje szach (w wersji docelowej szach mat) dla każdego
     z możliwych do wykonania ruchów"""
-
-    white_turn = True
 
     if is_check(board, get_all_locations(board, white_turn), True):
         return 'Już występuje szach (mat) dla białego, nie można wykonywać ruchu'
@@ -285,13 +281,28 @@ def check_all_moves(board: list):
     if is_check(board, get_all_locations(board, white_turn), False):
         return 'Już występuje szach (mat) dla czarnego, nie można wykonywać ruchu'
 
-
-    positions = get_all_locations(board, True)
+    positions = get_all_locations(board, white_turn)
 
     for position, figure in positions.items():
 
-        if figure[1] == 'r':
-            moves = rook_moves(board, position, white_turn)
+        def pick_function(figure_type: str):
+            """Zwraca odpowiednią funkcję która będzie użyta, w zależnośći od
+            rodzaju figury"""
+
+            switcher = {
+                'p': pawn_moves(board, position, white_turn),
+                'r': rook_moves(board, position, white_turn),
+                'k': knight_moves(board, position, white_turn),
+                'b': bishop_moves(board, position, white_turn),
+                'q': queen_moves(board, position, white_turn),
+                'W': king_moves(board, position, white_turn)
+            }
+
+            func = switcher.get(figure_type)
+            return func
+
+        figure_letter = figure[1]
+        moves = pick_function(figure_letter)
 
         for move in moves:
             positions = get_all_locations(board, True)
@@ -300,7 +311,10 @@ def check_all_moves(board: list):
             positions[move] = figure
 
             if is_check(board, positions, white_turn):
-                return 'Biały może wygrać'
+                if white_turn:
+                    return f'Biały może wygrać ({finishing_move(position, move)})'
+                else:
+                    return f'Czarny może wygrać ({finishing_move(position, move)})'
 
 
-print(check_all_moves(input_board))
+print(check_all_moves(input_board, True))
