@@ -275,6 +275,7 @@ def check_all_moves(board: list, white_turn: bool):
     """Sprawdzamy czy występuje szach (w wersji docelowej szach mat) dla każdego
     z możliwych do wykonania ruchów"""
 
+    # Sprawdzamy czy przypadkiem nie jest to już zakończona partia
     if is_check(board, get_all_locations(board, white_turn), True):
         return 'Już występuje szach (mat) dla białego, nie można wykonywać ruchu'
 
@@ -307,6 +308,7 @@ def check_all_moves(board: list, white_turn: bool):
         for move in moves:
             positions = get_all_locations(board, True)
 
+            # Usuwamy starą pozycję figury i dodajemy ją w nowej pozycji
             del positions[position]
             positions[move] = figure
 
@@ -317,4 +319,5 @@ def check_all_moves(board: list, white_turn: bool):
                     return f'Czarny może wygrać ({finishing_move(position, move)})'
 
 
+# Uruchamiamy główną funkcję programu
 print(check_all_moves(input_board, True))
